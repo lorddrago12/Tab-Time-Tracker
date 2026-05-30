@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tab Time Tracker</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-left">
+      <div class="header-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+        </svg>
+        Time Tracker
+      </div>
+      <button class="theme-toggle-btn" id="theme-toggle" title="Change theme" aria-label="Open theme picker">🎨</button>
+    </div>
+    <div class="day-selector" role="group" aria-label="Time period">
+      <button class="day-btn active" data-period="today">Today</button>
+      <button class="day-btn" data-period="week">Week</button>
+      <button class="day-btn" data-period="month">Month</button>
+    </div>
+  </div>
+
+  <!-- Theme Panel -->
+  <div class="theme-panel" id="theme-panel" role="region" aria-label="Theme selector">
+    <div class="theme-panel-title">Choose a theme</div>
+
+    <button class="theme-swatch active" data-theme="dark" title="Dark">
+      <div class="swatch-circle" style="background:linear-gradient(135deg,#0d1117 50%,#0F6E56 50%)"></div>
+      <span class="swatch-label">Dark</span>
+    </button>
+
+    <button class="theme-swatch" data-theme="catppuccin-mocha" title="Catppuccin Mocha">
+      <div class="swatch-circle" style="background:linear-gradient(135deg,#1e1e2e 50%,#cba6f7 50%)"></div>
+      <span class="swatch-label">Ctp Mocha</span>
+    </button>
+
+    <button class="theme-swatch" data-theme="catppuccin-latte" title="Catppuccin Latte">
+      <div class="swatch-circle" style="background:linear-gradient(135deg,#eff1f5 50%,#8839ef 50%)"></div>
+      <span class="swatch-label">Ctp Latte</span>
+    </button>
+
+    <button class="theme-swatch" data-theme="tokyo-night" title="Tokyo Night">
+      <div class="swatch-circle" style="background:linear-gradient(135deg,#1a1b26 50%,#7aa2f7 50%)"></div>
+      <span class="swatch-label">Tokyo Night</span>
+    </button>
+
+    <button class="theme-swatch" data-theme="rose-pine" title="Rosé Pine">
+      <div class="swatch-circle" style="background:linear-gradient(135deg,#191724 50%,#eb6f92 50%)"></div>
+      <span class="swatch-label">Rosé Pine</span>
+    </button>
+
+    <button class="theme-swatch" data-theme="gruvbox" title="Gruvbox">
+      <div class="swatch-circle" style="background:linear-gradient(135deg,#282828 50%,#d79921 50%)"></div>
+      <span class="swatch-label">Gruvbox</span>
+    </button>
+
+    <button class="theme-swatch" data-theme="nord" title="Nord">
+      <div class="swatch-circle" style="background:linear-gradient(135deg,#2e3440 50%,#88c0d0 50%)"></div>
+      <span class="swatch-label">Nord</span>
+    </button>
+
+    <button class="theme-swatch" data-theme="dracula" title="Dracula">
+      <div class="swatch-circle" style="background:linear-gradient(135deg,#282a36 50%,#bd93f9 50%)"></div>
+      <span class="swatch-label">Dracula</span>
+    </button>
+
+    <button class="theme-swatch" data-theme="solarized" title="Solarized">
+      <div class="swatch-circle" style="background:linear-gradient(135deg,#fdf6e3 50%,#268bd2 50%)"></div>
+      <span class="swatch-label">Solarized</span>
+    </button>
+  </div>
+
+  <!-- Summary cards -->
+  <div class="summary">
+    <div class="stat-card">
+      <span class="stat-label">Total time</span>
+      <span class="stat-val" id="stat-total">—</span>
+      <span class="stat-sub" id="stat-total-sub">&nbsp;</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Sites visited</span>
+      <span class="stat-val" id="stat-sites">—</span>
+      <span class="stat-sub" id="stat-sites-sub">&nbsp;</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Productive</span>
+      <span class="stat-val" id="stat-prod">—</span>
+      <span class="stat-sub" id="stat-prod-sub">&nbsp;</span>
+    </div>
+  </div>
+
+  <!-- Breakdown bar -->
+  <div class="section">
+    <div class="section-label">Time breakdown</div>
+    <div class="breakdown-bar" id="breakdown-bar" role="img" aria-label="Time category breakdown"></div>
+    <div class="legend" id="legend"></div>
+  </div>
+
+  <!-- Top sites list -->
+  <div class="section sites-section">
+    <div class="section-header">
+      <span class="section-label" style="margin-bottom:0">Top sites</span>
+      <button class="sort-btn" id="sort-btn" aria-label="Toggle sort order">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/>
+          <line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/>
+          <line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+        </svg>
+        Sort
+      </button>
+    </div>
+    <div id="sites-list">
+      <div class="empty-state">No data yet — browse around and come back!</div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <div class="live-indicator">
+      <div class="live-dot" id="live-dot"></div>
+      <span id="live-label">Loading...</span>
+    </div>
+    <div class="footer-right">
+      <button class="export-btn" id="settings-btn" aria-label="Open settings">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+        Settings
+      </button>
+      <button class="export-btn" id="export-btn" aria-label="Export data as JSON">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Export
+      </button>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

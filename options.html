@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Tab Time Tracker — Settings</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0d1117;
+      color: #e6edf3;
+      font-family: 'DM Sans', 'Segoe UI', system-ui, sans-serif;
+      font-size: 14px;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 40px 16px;
+    }
+    .container { width: 100%; max-width: 540px; }
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 32px;
+    }
+    .header svg { color: #1D9E75; }
+    .header h1 { font-size: 18px; font-weight: 700; }
+    .header span { font-size: 13px; color: #7d8590; margin-left: 4px; }
+    .card {
+      background: #161b22;
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 10px;
+      padding: 20px;
+    }
+    .card-title {
+      font-size: 11px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.06em;
+      color: #7d8590; margin-bottom: 14px;
+    }
+    .input-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .input-label {
+      font-size: 10px; color: #7d8590;
+      text-transform: uppercase; letter-spacing: 0.05em;
+      margin-bottom: 10px;
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 8px;
+    }
+    input[type="text"] {
+      background: #0d1117;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 6px;
+      padding: 8px 12px;
+      color: #e6edf3;
+      font-size: 13px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    input[type="text"]:focus { border-color: #1D9E75; }
+    input[type="text"]::placeholder { color: #7d8590; }
+    .add-btn {
+      background: #1D9E75; color: #fff;
+      border: none; border-radius: 6px;
+      padding: 8px 16px; font-size: 13px; font-weight: 600;
+      cursor: pointer; font-family: inherit;
+      transition: opacity 0.15s; white-space: nowrap;
+    }
+    .add-btn:hover { opacity: 0.85; }
+    .hint { font-size: 11px; color: #7d8590; margin-bottom: 16px; }
+    .blocked-list { display: flex; flex-direction: column; gap: 6px; margin-top: 14px; }
+    .blocked-item {
+      display: flex; align-items: center;
+      justify-content: space-between;
+      background: #0d1117;
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 6px; padding: 10px 12px;
+    }
+    .item-info { display: flex; flex-direction: column; gap: 3px; }
+    .site-name { font-size: 13px; color: #c9d1d9; }
+    .redirect-label { font-size: 11px; color: #7d8590; }
+    .item-actions { display: flex; gap: 6px; align-items: center; }
+    .edit-btn {
+      background: none; border: 1px solid rgba(255,255,255,0.1);
+      color: #8b949e; border-radius: 4px;
+      padding: 3px 8px; font-size: 11px;
+      cursor: pointer; font-family: inherit;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .edit-btn:hover { color: #e6edf3; border-color: rgba(255,255,255,0.3); }
+    .remove-btn {
+      background: none; border: none;
+      color: #7d8590; cursor: pointer;
+      font-size: 18px; line-height: 1;
+      transition: color 0.15s;
+    }
+    .remove-btn:hover { color: #e8405a; }
+    .empty { font-size: 12px; color: #7d8590; text-align: center; padding: 16px 0; }
+
+    /* Modal */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.7);
+      align-items: center; justify-content: center;
+      z-index: 100;
+    }
+    .modal-overlay.show { display: flex; }
+    .modal {
+      background: #161b22;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px; padding: 24px;
+      width: 100%; max-width: 400px;
+    }
+    .modal-title {
+      font-size: 14px; font-weight: 600;
+      margin-bottom: 16px; color: #e6edf3;
+    }
+    .modal-field { margin-bottom: 12px; }
+    .modal-field label {
+      display: block; font-size: 11px;
+      color: #7d8590; text-transform: uppercase;
+      letter-spacing: 0.05em; margin-bottom: 6px;
+    }
+    .modal-field input { width: 100%; }
+    .modal-actions { display: flex; gap: 8px; margin-top: 18px; justify-content: flex-end; }
+    .modal-save {
+      background: #1D9E75; color: #fff;
+      border: none; border-radius: 6px;
+      padding: 8px 18px; font-size: 13px; font-weight: 600;
+      cursor: pointer; font-family: inherit;
+    }
+    .modal-cancel {
+      background: none; color: #8b949e;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 6px; padding: 8px 18px;
+      font-size: 13px; cursor: pointer; font-family: inherit;
+    }
+
+    .toast {
+      position: fixed; bottom: 24px; left: 50%;
+      transform: translateX(-50%);
+      background: #1D9E75; color: #fff;
+      padding: 8px 20px; border-radius: 6px;
+      font-size: 13px; opacity: 0;
+      transition: opacity 0.2s; pointer-events: none;
+    }
+    .toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+      </svg>
+      <h1>Tab Time Tracker <span>Settings</span></h1>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🚫 Blocked Sites</div>
+      <div class="input-label">
+        <span>Site to block</span>
+        <span>Redirect to (optional)</span>
+        <span></span>
+      </div>
+      <div class="input-grid">
+        <input type="text" id="url-input" placeholder="e.g. youtube.com" />
+        <input type="text" id="redirect-input" placeholder="e.g. todoist.com" />
+        <button class="add-btn" id="add-btn">Add</button>
+      </div>
+      <p class="hint">Leave redirect empty to show the blocked page instead.</p>
+      <div class="blocked-list" id="blocked-list">
+        <div class="empty">No sites blocked yet</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Modal -->
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal" id="modal">
+      <div class="modal-title">Edit Blocked Site</div>
+      <div class="modal-field">
+        <label>Site</label>
+        <input type="text" id="modal-site" />
+      </div>
+      <div class="modal-field">
+        <label>Redirect to (optional)</label>
+        <input type="text" id="modal-redirect" placeholder="e.g. todoist.com" />
+      </div>
+      <div class="modal-actions">
+        <button class="modal-cancel" id="modal-close">Cancel</button>
+        <button class="modal-save" id="modal-save">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <script src="options.js"></script>
+</body>
+</html>
