@@ -115,4 +115,4 @@ The manifest also declares `data_collection_permissions: { required: ["none"] }`
 
 ## License
 
-No license file is currently included in this repository, so no license terms are specified here. If you intend to reuse or redistribute this code, please contact the repository owner to clarify licensing terms.
+This project is licensed under the [MIT License](LICENSE).
