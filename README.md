@@ -116,3 +116,5 @@ The manifest also declares `data_collection_permissions: { required: ["none"] }`
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
+
+mozilla-site-verification=a6edd0c2caf64197b269dc7d4aeac0ad
