@@ -213,7 +213,21 @@ api.alarms.onAlarm.addListener((alarm) => {
 });
 
 // Startup: pick up the current active tab
+const UNINSTALL_PAGE =
+  "https://tab-time-tracker-website.vercel.app/uninstall.html";
+
+function updateUninstallURL() {
+  if (!api.runtime.setUninstallURL) return; // not supported (e.g. Safari)
+  const version = api.runtime.getManifest().version;
+  const browserName = typeof browser !== "undefined" ? "firefox" : "chrome";
+  const url = `${UNINSTALL_PAGE}?v=${encodeURIComponent(version)}&b=${browserName}`;
+  api.runtime
+    .setUninstallURL(url)
+    .catch((e) => console.error("setUninstallURL failed:", e));
+}
+
 async function initTracking() {
+  updateUninstallURL();
   try {
     const tabs = await api.tabs.query({ active: true, currentWindow: true });
     if (tabs.length > 0 && tabs[0].url) {
