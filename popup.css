@@ -188,6 +188,7 @@
 
 body {
   width: 340px;
+  min-height: 420px;
   font-family: "DM Sans", "Segoe UI", system-ui, sans-serif;
   background: var(--bg-base);
   color: var(--text-primary);

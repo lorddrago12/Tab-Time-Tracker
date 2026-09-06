@@ -60,6 +60,9 @@
     <div class="divider"></div>
     <div class="msg">This website is blocked</div>
   </div>
-  <script src="blocked.js"></script>
+  <script>
+    const site = new URLSearchParams(location.search).get('site') || 'this site';
+    document.getElementById('domain').textContent = site;
+  </script>
 </body>
 </html>
