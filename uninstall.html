@@ -1,0 +1,508 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tab Time Tracker Feedback</title>
+    <meta name="robots" content="noindex" />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      :root {
+        --bg: #0d1117;
+        --surface: #161b22;
+        --elevated: #1c2128;
+        --border: rgba(255, 255, 255, 0.08);
+        --border-soft: rgba(255, 255, 255, 0.06);
+        --text: #e6edf3;
+        --text-secondary: #c9d1d9;
+        --muted: #7d8590;
+        --accent: #1d9e75;
+        --accent-text: #ffffff;
+        --danger: #e8405a;
+      }
+
+      html,
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: "DM Sans", "Segoe UI", system-ui, sans-serif;
+        min-height: 100vh;
+      }
+
+      body {
+        display: flex;
+        justify-content: center;
+        padding: 56px 16px;
+      }
+
+      .page {
+        width: 100%;
+        max-width: 480px;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 28px;
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 600;
+      }
+      .brand svg {
+        color: var(--accent);
+        flex-shrink: 0;
+      }
+
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border-soft);
+        border-radius: 12px;
+        padding: 28px 26px 24px;
+        animation: rise 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+      }
+
+      @keyframes rise {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .card,
+        .site-name {
+          animation: none !important;
+        }
+      }
+
+      h1 {
+        font-size: 20px;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+        margin-bottom: 10px;
+      }
+
+      .lede {
+        font-size: 13.5px;
+        line-height: 1.6;
+        color: var(--text-secondary);
+        margin-bottom: 24px;
+      }
+
+      .select-wrap {
+        position: relative;
+      }
+
+      .select-wrap::after {
+        content: "";
+        position: absolute;
+        right: 14px;
+        top: 50%;
+        width: 7px;
+        height: 7px;
+        border-right: 2px solid var(--muted);
+        border-bottom: 2px solid var(--muted);
+        transform: translateY(-65%) rotate(45deg);
+        pointer-events: none;
+      }
+
+      select {
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        cursor: pointer;
+        padding-right: 34px;
+      }
+      select:invalid {
+        color: #4b5563;
+      }
+      select option {
+        color: var(--text);
+        background: var(--surface);
+      }
+
+      .field {
+        margin-bottom: 18px;
+      }
+
+      .field label.field-label {
+        display: block;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--muted);
+        margin-bottom: 8px;
+      }
+
+      textarea,
+      input[type="email"],
+      select {
+        width: 100%;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 10px 12px;
+        color: var(--text);
+        font-size: 13.5px;
+        font-family: inherit;
+        outline: none;
+        transition: border-color 0.15s;
+        resize: vertical;
+      }
+      textarea {
+        min-height: 78px;
+        line-height: 1.5;
+      }
+      textarea:focus,
+      input[type="email"]:focus,
+      select:focus {
+        border-color: var(--accent);
+      }
+      textarea::placeholder,
+      input::placeholder {
+        color: #4b5563;
+      }
+
+      .submit-row {
+        margin-top: 22px;
+      }
+
+      button[type="submit"] {
+        width: 100%;
+        background: var(--accent);
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        padding: 12px 16px;
+        font-size: 14px;
+        font-weight: 600;
+        font-family: inherit;
+        cursor: pointer;
+        transition: opacity 0.15s;
+      }
+      button[type="submit"]:hover {
+        opacity: 0.9;
+      }
+      button[type="submit"]:disabled {
+        opacity: 0.6;
+        cursor: default;
+      }
+      button[type="submit"]:focus-visible {
+        outline: 2px solid var(--text);
+        outline-offset: 2px;
+      }
+
+      .skip-note {
+        text-align: center;
+        font-size: 12px;
+        color: var(--muted);
+        margin-top: 14px;
+      }
+
+      .error-note {
+        display: none;
+        font-size: 12.5px;
+        color: var(--danger);
+        margin-top: 12px;
+        line-height: 1.5;
+      }
+      .error-note a {
+        color: inherit;
+      }
+
+      .footer {
+        margin-top: 20px;
+        font-size: 11.5px;
+        color: var(--muted);
+        line-height: 1.6;
+        text-align: center;
+      }
+      .footer a {
+        color: var(--muted);
+        text-decoration: underline;
+      }
+      .footer a:hover {
+        color: var(--text-secondary);
+      }
+
+      /* Thank-you state */
+      .thanks {
+        display: none;
+        text-align: center;
+        padding: 12px 0 4px;
+      }
+      .thanks .check {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: var(--accent);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 16px;
+      }
+      .thanks h2 {
+        font-size: 18px;
+        margin-bottom: 8px;
+      }
+      .thanks p {
+        font-size: 13.5px;
+        color: var(--text-secondary);
+        line-height: 1.6;
+      }
+
+      .hidden {
+        display: none !important;
+      }
+
+      /* honeypot, kept off-screen rather than display:none */
+      .botcheck-wrap {
+        position: absolute;
+        left: -9999px;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+      }
+
+      @media (max-width: 400px) {
+        .card {
+          padding: 22px 18px 20px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <div class="brand">
+        <svg
+          width="15"
+          height="15"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="12" r="10" />
+          <polyline points="12 6 12 12 16 14" />
+        </svg>
+        Tab Time Tracker
+      </div>
+
+      <div class="card">
+        <div id="form-state">
+          <h1>Sorry to see you go</h1>
+          <p class="lede">
+            Tab Time Tracker was just removed. A quick reason helps a lot. No
+            account needed.
+          </p>
+
+          <form id="feedback-form">
+            <div class="field">
+              <label class="field-label" for="reason"
+                >What made you uninstall?</label
+              >
+              <div class="select-wrap">
+                <select id="reason" name="reason" required>
+                  <option value="" disabled selected hidden>
+                    Select a reason
+                  </option>
+                  <option value="Ran into bugs">Ran into bugs</option>
+                  <option value="Missing a feature I needed">
+                    Missing a feature I needed
+                  </option>
+                  <option value="Too complicated to use">
+                    Too complicated to use
+                  </option>
+                  <option value="Switched to something else">
+                    Switched to something else
+                  </option>
+                  <option value="Uneasy about permissions or privacy">
+                    Uneasy about permissions or privacy
+                  </option>
+                  <option value="Just don't need it anymore">
+                    Just don't need it anymore
+                  </option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="field">
+              <label class="field-label" for="details"
+                >Anything else? (optional)</label
+              >
+              <textarea
+                id="details"
+                name="details"
+                placeholder="A bug you hit, a feature you needed, anything at all"
+              ></textarea>
+            </div>
+
+            <div class="field">
+              <label class="field-label" for="email"
+                >Email (optional, for follow-up)</label
+              >
+              <input
+                type="email"
+                id="email"
+                name="email"
+                placeholder="you@example.com"
+              />
+            </div>
+
+            <!-- context, filled in from the query string the extension attaches -->
+            <input
+              type="hidden"
+              name="extension_version"
+              id="field-version"
+              value="unknown"
+            />
+            <input
+              type="hidden"
+              name="browser"
+              id="field-browser"
+              value="unknown"
+            />
+
+            <!-- Web3Forms config, replace access_key with your own, see setup notes -->
+            <input
+              type="hidden"
+              name="access_key"
+              value="61446515-94e3-49f3-b7c6-3105b70bd05c"
+            />
+            <input
+              type="hidden"
+              name="subject"
+              value="Tab Time Tracker uninstall feedback"
+            />
+            <input
+              type="hidden"
+              name="from_name"
+              value="Tab Time Tracker uninstall page"
+            />
+
+            <!-- honeypot: real users never see or fill this -->
+            <div class="botcheck-wrap" aria-hidden="true">
+              <input
+                type="checkbox"
+                name="botcheck"
+                tabindex="-1"
+                autocomplete="off"
+              />
+            </div>
+
+            <div class="submit-row">
+              <button type="submit">Send feedback</button>
+              <div class="error-note" id="error-note">
+                Couldn't send that. Try
+                <a
+                  href="https://github.com/lorddrago12/Tab-Time-Tracker/issues/new"
+                  target="_blank"
+                  rel="noopener"
+                  >GitHub</a
+                >
+                instead.
+              </div>
+            </div>
+          </form>
+
+          <p class="skip-note">Or just close this tab. Thanks for trying it.</p>
+        </div>
+
+        <div class="thanks" id="thanks-state">
+          <div class="check">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#fff"
+              stroke-width="3"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          </div>
+          <h2>Thanks</h2>
+          <p>That helps make the next version better.</p>
+        </div>
+
+        <div class="footer">
+          Not tracked or sold.
+          <a
+            href="https://github.com/lorddrago12/Tab-Time-Tracker"
+            target="_blank"
+            rel="noopener"
+            >View source</a
+          >
+        </div>
+      </div>
+    </div>
+
+    <script>
+      (function () {
+        var params = new URLSearchParams(window.location.search);
+        var versionField = document.getElementById("field-version");
+        var browserField = document.getElementById("field-browser");
+        if (versionField) versionField.value = params.get("v") || "unknown";
+        if (browserField) browserField.value = params.get("b") || "unknown";
+
+        var form = document.getElementById("feedback-form");
+        var formState = document.getElementById("form-state");
+        var thanksState = document.getElementById("thanks-state");
+        var errorNote = document.getElementById("error-note");
+
+        form.addEventListener("submit", function (e) {
+          e.preventDefault();
+          errorNote.style.display = "none";
+
+          var submitBtn = form.querySelector('button[type="submit"]');
+          submitBtn.disabled = true;
+          submitBtn.textContent = "Sending…";
+
+          var formData = new FormData(form);
+          var payload = Object.fromEntries(formData.entries());
+
+          fetch("https://api.web3forms.com/submit", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "application/json",
+            },
+            body: JSON.stringify(payload),
+          })
+            .then(function (res) {
+              return res.json();
+            })
+            .then(function (result) {
+              if (result && result.success) {
+                formState.style.display = "none";
+                thanksState.style.display = "block";
+              } else {
+                throw new Error("submit failed");
+              }
+            })
+            .catch(function () {
+              errorNote.style.display = "block";
+              submitBtn.disabled = false;
+              submitBtn.textContent = "Send feedback";
+            });
+        });
+      })();
+    </script>
+  </body>
+</html>
