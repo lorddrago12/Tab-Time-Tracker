@@ -10,6 +10,8 @@ let sessionStart = null;
 let isIdle = false;
 let stateReady = false;
 let categoryOverrides = {};
+let initializationPromise = null;
+let storageMutationQueue = Promise.resolve();
 
 async function loadOverrides() {
   try {
@@ -17,6 +19,7 @@ async function loadOverrides() {
     categoryOverrides = result.categoryOverrides || {};
   } catch (e) {
     console.error("loadOverrides error:", e);
+    throw e;
   }
 }
 
@@ -35,29 +38,51 @@ api.storage.onChanged.addListener((changes, area) => {
 // and restore from there once per background-script lifetime.
 async function initIfNeeded() {
   if (stateReady) return;
-  stateReady = true;
-  await loadOverrides();
-  if (!api.storage.session) return; // older engines without storage.session
-  try {
+  if (initializationPromise) return initializationPromise;
+
+  initializationPromise = (async () => {
+    await loadOverrides();
+    if (!api.storage.session) {
+      stateReady = true;
+      return; // older engines without storage.session
+    }
     const stored = await api.storage.session.get([
       "activeTabId",
       "activeUrl",
       "sessionStart",
       "isIdle",
     ]);
-    if (typeof stored.activeTabId === "number") activeTabId = stored.activeTabId;
+    if (typeof stored.activeTabId === "number")
+      activeTabId = stored.activeTabId;
     if (typeof stored.activeUrl === "string") activeUrl = stored.activeUrl;
-    if (typeof stored.sessionStart === "number") sessionStart = stored.sessionStart;
+    if (typeof stored.sessionStart === "number")
+      sessionStart = stored.sessionStart;
     if (typeof stored.isIdle === "boolean") isIdle = stored.isIdle;
-  } catch (e) {
+    stateReady = true;
+  })().catch((e) => {
+    initializationPromise = null;
     console.error("initIfNeeded error:", e);
-  }
+    throw e;
+  });
+
+  return initializationPromise;
+}
+
+function enqueueStorageMutation(operation) {
+  const next = storageMutationQueue.then(operation, operation);
+  storageMutationQueue = next.catch(() => {});
+  return next;
 }
 
 async function persistSessionState() {
   if (!api.storage.session) return;
   try {
-    await api.storage.session.set({ activeTabId, activeUrl, sessionStart, isIdle });
+    await api.storage.session.set({
+      activeTabId,
+      activeUrl,
+      sessionStart,
+      isIdle,
+    });
   } catch (e) {
     console.error("persistSessionState error:", e);
   }
@@ -156,30 +181,32 @@ function getCategory(hostname) {
 // ─── Core tracking ────────────────────────────────────────────────────────────
 
 async function flushTime() {
-  if (!activeUrl || !sessionStart || isIdle) return;
-  const hostname = getHostname(activeUrl);
-  if (!hostname) return;
+  return enqueueStorageMutation(async () => {
+    if (!activeUrl || !sessionStart || isIdle) return;
+    const hostname = getHostname(activeUrl);
+    if (!hostname) return;
 
-  const elapsed = Math.floor((Date.now() - sessionStart) / 1000);
-  if (elapsed <= 0) return;
+    const elapsed = Math.floor((Date.now() - sessionStart) / 1000);
+    if (elapsed <= 0) return;
 
-  const storageKey = `data_${getTodayKey()}`;
-  const result = await api.storage.local.get([storageKey]);
-  const data = result[storageKey] || { sites: {}, total: 0 };
+    const storageKey = `data_${getTodayKey()}`;
+    const result = await api.storage.local.get([storageKey]);
+    const data = result[storageKey] || { sites: {}, total: 0 };
 
-  if (!data.sites[hostname]) {
-    data.sites[hostname] = {
-      seconds: 0,
-      category: getCategory(hostname),
-      visits: 0,
-    };
-  }
-  data.sites[hostname].seconds += elapsed;
-  data.total += elapsed;
+    if (!data.sites[hostname]) {
+      data.sites[hostname] = {
+        seconds: 0,
+        category: getCategory(hostname),
+        visits: 0,
+      };
+    }
+    data.sites[hostname].seconds += elapsed;
+    data.total += elapsed;
 
-  await api.storage.local.set({ [storageKey]: data });
-  sessionStart = Date.now();
-  await persistSessionState();
+    await api.storage.local.set({ [storageKey]: data });
+    sessionStart = Date.now();
+    await persistSessionState();
+  });
 }
 
 async function startTracking(tabId, url) {
@@ -199,21 +226,50 @@ async function stopTracking() {
 }
 
 async function markVisit(url) {
-  const hostname = getHostname(url);
-  if (!hostname) return;
-  const storageKey = `data_${getTodayKey()}`;
-  const result = await api.storage.local.get([storageKey]);
-  const data = result[storageKey] || { sites: {}, total: 0 };
-  if (!data.sites[hostname]) {
-    data.sites[hostname] = {
-      seconds: 0,
-      category: getCategory(hostname),
-      visits: 0,
-    };
-  }
-  data.sites[hostname].visits += 1;
-  await api.storage.local.set({ [storageKey]: data });
+  return enqueueStorageMutation(async () => {
+    const hostname = getHostname(url);
+    if (!hostname) return;
+    const storageKey = `data_${getTodayKey()}`;
+    const result = await api.storage.local.get([storageKey]);
+    const data = result[storageKey] || { sites: {}, total: 0 };
+    if (!data.sites[hostname]) {
+      data.sites[hostname] = {
+        seconds: 0,
+        category: getCategory(hostname),
+        visits: 0,
+      };
+    }
+    data.sites[hostname].visits += 1;
+    await api.storage.local.set({ [storageKey]: data });
+  });
 }
+
+api.runtime.onMessage.addListener((message) => {
+  if (!message || message.type !== "reclassifyCategoryHistory") return;
+  return initIfNeeded().then(() =>
+    enqueueStorageMutation(async () => {
+      await loadOverrides();
+      const category =
+        message.category === null
+          ? getCategory(message.hostname)
+          : message.category;
+      const all = await api.storage.local.get(null);
+      const updates = {};
+      for (const [key, day] of Object.entries(all)) {
+        if (
+          key.startsWith("data_") &&
+          day &&
+          day.sites &&
+          day.sites[message.hostname]
+        ) {
+          day.sites[message.hostname].category = category;
+          updates[key] = day;
+        }
+      }
+      if (Object.keys(updates).length) await api.storage.local.set(updates);
+    }),
+  );
+});
 
 // ─── Event listeners ──────────────────────────────────────────────────────────
 
@@ -272,8 +328,10 @@ api.idle.onStateChanged.addListener(async (state) => {
 
 // Periodic flush every 30 seconds
 api.alarms.create("flush", { periodInMinutes: 0.5 });
-api.alarms.onAlarm.addListener((alarm) => {
-  if (alarm.name === "flush") flushTime();
+api.alarms.onAlarm.addListener(async (alarm) => {
+  if (alarm.name !== "flush") return;
+  await initIfNeeded();
+  await flushTime();
 });
 
 // Startup: pick up the current active tab
