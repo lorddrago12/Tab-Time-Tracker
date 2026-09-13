@@ -79,7 +79,8 @@ const CATEGORY_LABELS = {
 // ─── Utilities ────────────────────────────────────────────────────────────────
 
 function formatTime(seconds) {
-  if (seconds < 60) return `0m`;
+  seconds = Math.max(0, Math.floor(seconds));
+  if (seconds < 60) return `${seconds}s`;
   const h = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);
   if (h === 0) return `${m}m`;

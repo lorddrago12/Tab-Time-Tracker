@@ -50,7 +50,7 @@
       grid-template-columns: 1fr 1fr auto;
       gap: 8px;
     }
-    input[type="text"] {
+    input[type="text"], select {
       background: #0d1117;
       border: 1px solid rgba(255,255,255,0.1);
       border-radius: 6px;
@@ -61,8 +61,35 @@
       outline: none;
       transition: border-color 0.15s;
     }
-    input[type="text"]:focus { border-color: #1D9E75; }
+    input[type="text"]:focus, select:focus { border-color: #1D9E75; }
     input[type="text"]::placeholder { color: #7d8590; }
+    .cat-badge { font-size: 11px; font-weight: 600; }
+    .tab-bar {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 20px;
+      background: #161b22;
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 10px;
+      padding: 4px;
+    }
+    .tab-btn {
+      flex: 1;
+      background: none;
+      border: none;
+      border-radius: 7px;
+      padding: 9px 12px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #7d8590;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.15s, color 0.15s;
+    }
+    .tab-btn:hover:not(.active) { color: #c9d1d9; }
+    .tab-btn.active { background: #1D9E75; color: #fff; }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
     .add-btn {
       background: #1D9E75; color: #fff;
       border: none; border-radius: 6px;
@@ -160,21 +187,53 @@
       <h1>Tab Time Tracker <span>Settings</span></h1>
     </div>
 
-    <div class="card">
-      <div class="card-title">🚫 Blocked Sites</div>
-      <div class="input-label">
-        <span>Site to block</span>
-        <span>Redirect to (optional)</span>
-        <span></span>
+    <div class="tab-bar" role="tablist">
+      <button class="tab-btn active" id="tab-blocked" data-panel="panel-blocked" role="tab" aria-selected="true">🚫 Blocked Sites</button>
+      <button class="tab-btn" id="tab-categories" data-panel="panel-categories" role="tab" aria-selected="false">🏷️ Categories</button>
+    </div>
+
+    <div class="tab-panel active" id="panel-blocked" role="tabpanel">
+      <div class="card">
+        <div class="card-title">🚫 Blocked Sites</div>
+        <div class="input-label">
+          <span>Site to block</span>
+          <span>Redirect to (optional)</span>
+          <span></span>
+        </div>
+        <div class="input-grid">
+          <input type="text" id="url-input" placeholder="e.g. youtube.com" />
+          <input type="text" id="redirect-input" placeholder="e.g. todoist.com" />
+          <button class="add-btn" id="add-btn">Add</button>
+        </div>
+        <p class="hint">Leave redirect empty to show the blocked page instead.</p>
+        <div class="blocked-list" id="blocked-list">
+          <div class="empty">No sites blocked yet</div>
+        </div>
       </div>
-      <div class="input-grid">
-        <input type="text" id="url-input" placeholder="e.g. youtube.com" />
-        <input type="text" id="redirect-input" placeholder="e.g. todoist.com" />
-        <button class="add-btn" id="add-btn">Add</button>
-      </div>
-      <p class="hint">Leave redirect empty to show the blocked page instead.</p>
-      <div class="blocked-list" id="blocked-list">
-        <div class="empty">No sites blocked yet</div>
+    </div>
+
+    <div class="tab-panel" id="panel-categories" role="tabpanel">
+      <div class="card">
+        <div class="card-title">🏷️ Category Overrides</div>
+        <div class="input-label">
+          <span>Site</span>
+          <span>Category</span>
+          <span></span>
+        </div>
+        <div class="input-grid">
+          <input type="text" id="cat-url-input" placeholder="e.g. myforum.com" />
+          <select id="cat-select">
+            <option value="work">Work</option>
+            <option value="learning">Learning</option>
+            <option value="social">Social</option>
+            <option value="entertainment">Entertainment</option>
+          </select>
+          <button class="add-btn" id="cat-add-btn">Add</button>
+        </div>
+        <p class="hint">Sets this site's category everywhere, including past data.</p>
+        <div class="blocked-list" id="category-list">
+          <div class="empty">No custom categories yet</div>
+        </div>
       </div>
     </div>
   </div>

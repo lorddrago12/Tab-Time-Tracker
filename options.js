@@ -1,5 +1,34 @@
 const api = typeof browser !== 'undefined' ? browser : chrome;
 
+// ─── Tabs ─────────────────────────────────────────────────────────────────
+// Keeps the Blocked Sites and Category Overrides sections on separate tabs
+// so a long blocked-sites list doesn't push categories out of reach.
+
+function activateTab(tabId) {
+  document.querySelectorAll('.tab-btn').forEach((btn) => {
+    const isActive = btn.id === tabId;
+    btn.classList.toggle('active', isActive);
+    btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
+  });
+  document.querySelectorAll('.tab-panel').forEach((panel) => {
+    panel.classList.toggle('active', panel.id === document.getElementById(tabId).dataset.panel);
+  });
+}
+
+document.querySelectorAll('.tab-btn').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    activateTab(btn.id);
+    api.storage.local.set({ settingsTab: btn.id });
+  });
+});
+
+(async () => {
+  const result = await api.storage.local.get(['settingsTab']);
+  if (result.settingsTab && document.getElementById(result.settingsTab)) {
+    activateTab(result.settingsTab);
+  }
+})();
+
 async function getBlockedSites() {
   const result = await api.storage.local.get(['blockedSites']);
   return result.blockedSites || [];
@@ -129,3 +158,119 @@ document.getElementById('url-input').addEventListener('keydown', (e) => {
 });
 
 renderList();
+
+// ─── Category overrides ───────────────────────────────────────────────────
+
+const CATEGORY_COLORS = {
+  work: '#1D9E75',
+  learning: '#378ADD',
+  social: '#D85A30',
+  entertainment: '#BA7517',
+};
+
+const CATEGORY_LABELS = {
+  work: 'Work',
+  learning: 'Learning',
+  social: 'Social',
+  entertainment: 'Entertainment',
+};
+
+async function getCategoryOverrides() {
+  const result = await api.storage.local.get(['categoryOverrides']);
+  return result.categoryOverrides || {};
+}
+
+async function saveCategoryOverrides(overrides) {
+  await api.storage.local.set({ categoryOverrides: overrides });
+}
+
+// Updates the category on every stored day already recorded for this
+// hostname, so past data reflects the override immediately instead of
+// only new tracking going forward.
+async function applyCategoryToHistory(hostname, category) {
+  const all = await api.storage.local.get(null);
+  const updates = {};
+  for (const [key, day] of Object.entries(all)) {
+    if (key.startsWith('data_') && day && day.sites && day.sites[hostname]) {
+      day.sites[hostname].category = category;
+      updates[key] = day;
+    }
+  }
+  if (Object.keys(updates).length) {
+    await api.storage.local.set(updates);
+  }
+}
+
+async function renderCategoryList() {
+  const overrides = await getCategoryOverrides();
+  const list = document.getElementById('category-list');
+  list.innerHTML = '';
+
+  const entries = Object.entries(overrides);
+  if (entries.length === 0) {
+    list.innerHTML = '<div class="empty">No custom categories yet</div>';
+    return;
+  }
+
+  entries.forEach(([site, category]) => {
+    const item = document.createElement('div');
+    item.className = 'blocked-item';
+
+    const info = document.createElement('div');
+    info.className = 'item-info';
+
+    const siteName = document.createElement('span');
+    siteName.className = 'site-name';
+    siteName.textContent = site;
+
+    const badge = document.createElement('span');
+    badge.className = 'cat-badge';
+    badge.style.color = CATEGORY_COLORS[category] || '#7d8590';
+    badge.textContent = CATEGORY_LABELS[category] || category;
+
+    info.appendChild(siteName);
+    info.appendChild(badge);
+
+    const actions = document.createElement('div');
+    actions.className = 'item-actions';
+
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'remove-btn';
+    removeBtn.textContent = '×';
+    removeBtn.addEventListener('click', async () => {
+      const updated = await getCategoryOverrides();
+      delete updated[site];
+      await saveCategoryOverrides(updated);
+      renderCategoryList();
+      showToast('Category override removed');
+    });
+
+    actions.appendChild(removeBtn);
+    item.appendChild(info);
+    item.appendChild(actions);
+    list.appendChild(item);
+  });
+}
+
+document.getElementById('cat-add-btn').addEventListener('click', async () => {
+  const siteInput = document.getElementById('cat-url-input');
+  const categorySelect = document.getElementById('cat-select');
+  const site = normalizeUrl(siteInput.value);
+  const category = categorySelect.value;
+  if (!site) return;
+
+  const overrides = await getCategoryOverrides();
+  overrides[site] = category;
+  await saveCategoryOverrides(overrides);
+  await applyCategoryToHistory(site, category);
+
+  siteInput.value = '';
+  renderCategoryList();
+  showToast('Category set ✓');
+});
+
+document.getElementById('cat-url-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') document.getElementById('cat-add-btn').click();
+});
+
+renderCategoryList();

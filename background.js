@@ -8,6 +8,60 @@ let activeTabId = null;
 let activeUrl = null;
 let sessionStart = null;
 let isIdle = false;
+let stateReady = false;
+let categoryOverrides = {};
+
+async function loadOverrides() {
+  try {
+    const result = await api.storage.local.get(["categoryOverrides"]);
+    categoryOverrides = result.categoryOverrides || {};
+  } catch (e) {
+    console.error("loadOverrides error:", e);
+  }
+}
+
+// Keep the in-memory cache in sync if the options page changes overrides
+// while this background script is already running.
+api.storage.onChanged.addListener((changes, area) => {
+  if (area === "local" && changes.categoryOverrides) {
+    categoryOverrides = changes.categoryOverrides.newValue || {};
+  }
+});
+
+// Firefox's background page is non-persistent and can unload while the
+// browser is still open. When it wakes back up, the module-level state
+// above resets to its initial values, so we mirror it into
+// browser.storage.session (cleared only when the browser fully closes)
+// and restore from there once per background-script lifetime.
+async function initIfNeeded() {
+  if (stateReady) return;
+  stateReady = true;
+  await loadOverrides();
+  if (!api.storage.session) return; // older engines without storage.session
+  try {
+    const stored = await api.storage.session.get([
+      "activeTabId",
+      "activeUrl",
+      "sessionStart",
+      "isIdle",
+    ]);
+    if (typeof stored.activeTabId === "number") activeTabId = stored.activeTabId;
+    if (typeof stored.activeUrl === "string") activeUrl = stored.activeUrl;
+    if (typeof stored.sessionStart === "number") sessionStart = stored.sessionStart;
+    if (typeof stored.isIdle === "boolean") isIdle = stored.isIdle;
+  } catch (e) {
+    console.error("initIfNeeded error:", e);
+  }
+}
+
+async function persistSessionState() {
+  if (!api.storage.session) return;
+  try {
+    await api.storage.session.set({ activeTabId, activeUrl, sessionStart, isIdle });
+  } catch (e) {
+    console.error("persistSessionState error:", e);
+  }
+}
 
 function getHostname(url) {
   try {
@@ -33,6 +87,7 @@ function getTodayKey() {
 
 function getCategory(hostname) {
   if (!hostname) return "other";
+  if (categoryOverrides[hostname]) return categoryOverrides[hostname];
   const rules = {
     work: [
       "github.com",
@@ -124,6 +179,7 @@ async function flushTime() {
 
   await api.storage.local.set({ [storageKey]: data });
   sessionStart = Date.now();
+  await persistSessionState();
 }
 
 async function startTracking(tabId, url) {
@@ -131,6 +187,7 @@ async function startTracking(tabId, url) {
   activeTabId = tabId;
   activeUrl = url;
   sessionStart = Date.now();
+  await persistSessionState();
 }
 
 async function stopTracking() {
@@ -138,6 +195,7 @@ async function stopTracking() {
   activeTabId = null;
   activeUrl = null;
   sessionStart = null;
+  await persistSessionState();
 }
 
 async function markVisit(url) {
@@ -160,6 +218,7 @@ async function markVisit(url) {
 // ─── Event listeners ──────────────────────────────────────────────────────────
 
 api.tabs.onActivated.addListener(async (activeInfo) => {
+  await initIfNeeded();
   try {
     const tab = await api.tabs.get(activeInfo.tabId);
     if (tab && tab.url) {
@@ -172,16 +231,19 @@ api.tabs.onActivated.addListener(async (activeInfo) => {
 });
 
 api.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
+  await initIfNeeded();
   if (changeInfo.status === "complete" && tabId === activeTabId && tab.url) {
     await startTracking(tabId, tab.url);
   }
 });
 
 api.windows.onFocusChanged.addListener(async (windowId) => {
+  await initIfNeeded();
   const NONE = api.windows.WINDOW_ID_NONE;
   if (windowId === NONE) {
     await flushTime();
     isIdle = true;
+    await persistSessionState();
     return;
   }
   isIdle = false;
@@ -197,6 +259,7 @@ api.windows.onFocusChanged.addListener(async (windowId) => {
 
 api.idle.setDetectionInterval(IDLE_THRESHOLD);
 api.idle.onStateChanged.addListener(async (state) => {
+  await initIfNeeded();
   if (state === "idle" || state === "locked") {
     await flushTime();
     isIdle = true;
@@ -204,6 +267,7 @@ api.idle.onStateChanged.addListener(async (state) => {
     isIdle = false;
     sessionStart = Date.now();
   }
+  await persistSessionState();
 });
 
 // Periodic flush every 30 seconds
@@ -227,6 +291,7 @@ function updateUninstallURL() {
 }
 
 async function initTracking() {
+  await initIfNeeded();
   updateUninstallURL();
   try {
     const tabs = await api.tabs.query({ active: true, currentWindow: true });

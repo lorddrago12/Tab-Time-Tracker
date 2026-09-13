@@ -188,7 +188,6 @@
 
 body {
   width: 340px;
-  min-height: 420px;
   font-family: "DM Sans", "Segoe UI", system-ui, sans-serif;
   background: var(--bg-base);
   color: var(--text-primary);
@@ -319,17 +318,19 @@ body {
   width: 26px;
   height: 26px;
   border-radius: 50%;
-  border: 2.5px solid transparent;
-  transition:
-    border-color 0.15s,
-    transform 0.12s;
   flex-shrink: 0;
+  transition:
+    box-shadow 0.15s,
+    transform 0.12s;
 }
 .theme-swatch:hover .swatch-circle {
   transform: scale(1.12);
 }
+/* Ring drawn entirely outside the circle (buffer matching the panel's own
+   background, then the highlight ring) so the active state never changes
+   the circle's own size or fill -- it only adds a halo around it. */
 .theme-swatch.active .swatch-circle {
-  border-color: var(--text-primary);
+  box-shadow: 0 0 0 2px var(--bg-surface), 0 0 0 4px var(--text-primary);
 }
 
 .swatch-label {

@@ -35,6 +35,7 @@ Based on the current source code:
 - **Automatic time tracking per site** — tracks the active tab's hostname and accumulates seconds spent on it per calendar day (`background.js`).
 - **Idle detection** — pauses tracking when the browser is idle or locked, using the WebExtensions `idle` API (60-second detection threshold) and window-focus events, so time isn't counted while you're away.
 - **Automatic category tagging** — each site is automatically classified into one of five categories (Work, Learning, Social, Entertainment, Other) using a built-in hostname-matching ruleset covering common sites (e.g. GitHub, Notion, and Slack as Work; Stack Overflow and MDN as Learning; Reddit and X/Twitter as Social; YouTube and Netflix as Entertainment).
+- **Manual category overrides** — the settings page lets you assign a site to Work, Learning, Social, or Entertainment yourself, overriding the automatic detection. The override applies going forward and retroactively updates any tracking data already recorded for that site.
 - **Popup dashboard** with:
   - Today / Week / Month view toggle
   - Summary stats: total time, number of sites visited, and "productive" time (Work + Learning categories), each compared against the previous equivalent period
@@ -91,8 +92,8 @@ Tab-Time-Tracker/
 ├── popup.html          # Popup dashboard markup
 ├── popup.js            # Popup logic: rendering stats, charts, site list, themes, export
 ├── popup.css           # Popup styling and theme definitions
-├── options.html        # Settings page markup (blocked sites manager)
-├── options.js           # Settings page logic (add/edit/remove blocked sites)
+├── options.html        # Settings page markup (tabbed: blocked sites, category overrides)
+├── options.js           # Settings page logic (blocked sites + category overrides)
 ├── blocked.html         # Page shown when a blocked site is visited (no redirect configured)
 ├── icons/               # Extension icons (16px, 48px, 128px)
 └── README.txt            # Placeholder note about the icons folder
